@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -45,7 +44,7 @@ report_dict = classification_report(y_test, y_pred, output_dict=True)
 classification_df = pd.DataFrame(report_dict).transpose()
 
 # Streamlit UI
-st.set_page_config(page_title="당뇨병 및 건강 지표 분석", layout="wide")
+st.set_page_config(page_title="Obesity & Diabetes Dashboard", layout="wide")
 
 # 사이드바에서 메뉴 항목 선택
 menu = st.sidebar.selectbox("Go to", ["Home", "데이터분석", "데이터시각화", "머신러닝보고서"])
@@ -65,6 +64,8 @@ def home():
     - **임신성 당뇨병**: 임신 중에 발생하며, 출산 후 대부분은 사라지지만, 이후 당뇨병 발병 위험이 높아질 수 있습니다.
     
     당뇨병은 증상이 초기에는 미미할 수 있으므로, 정기적인 혈당 검사를 통해 조기에 발견하고 관리하는 것이 중요합니다.
+
+    이 대시보드는 당뇨병 예측을 위한 데이터 분석 및 모델링을 다루고 있습니다. 주요 데이터로는 BMI, 포도당 수치, 혈압 등의 정보를 바탕으로, 개인의 당뇨 여부를 예측하는 모델을 학습시켜 정확도를 평가하고, 다양한 시각적 분석을 제공합니다. 이 대시보드를 통해 당뇨병 관련 데이터를 시각적으로 분석하고, 예측 모델의 성능을 확인할 수 있습니다.
     """)
 
     # 관련 이미지 추가 (이미지는 URL 또는 로컬 파일 경로로 제공)
@@ -84,42 +85,56 @@ def home():
     - **Outcome**: 당뇨 여부 (0: 정상, 1: 당뇨)
     """)
 
-def eda():
+def data_analysis():
+    st.title("데이터 분석")
+    st.write("여기서는 데이터 분석을 위한 기본적인 통계값을 확인할 수 있습니다.")
+    st.write(diabetes_df.describe())  # 데이터의 기본 통계값 출력
+
+def data_visualization():
     st.title("데이터 시각화")
-    chart_tabs = st.tabs(["Histogram", "Boxplot", "Heatmap"])
+    st.subheader("BMI 및 혈압 분포")
     
+    # 탭 메뉴
+    chart_tabs = st.tabs(["Histogram", "Boxplot", "Heatmap"])
+
     with chart_tabs[0]:
         st.subheader("연령, 포도당, 혈압, BMI 분포")
-        # Plotly histogram
-        fig = px.histogram(diabetes_df, x="Age", nbins=20, title="Age Distribution")
-        st.plotly_chart(fig)
+        fig, axes = plt.subplots(2,2,figsize=(12,8))
+        columns = ["Age", "Glucose", "BloodPressure", "BMI"]
         
-        fig = px.histogram(diabetes_df, x="Glucose", nbins=20, title="Glucose Distribution")
-        st.plotly_chart(fig)
+        # bins 간격 조정 (이 부분에서 간격을 넓혀줌)
+        for i, col in enumerate(columns):
+            ax = axes[i//2, i%2]
+            sns.histplot(diabetes_df[col], bins=30, kde=True, ax=ax)  # bins 값을 늘려서 간격을 조정
+            ax.set_title(col)
         
-        fig = px.histogram(diabetes_df, x="BloodPressure", nbins=20, title="Blood Pressure Distribution")
-        st.plotly_chart(fig)
-        
-        fig = px.histogram(diabetes_df, x="BMI", nbins=20, title="BMI Distribution")
-        st.plotly_chart(fig)
+        plt.tight_layout()  # 레이아웃 자동 조정
+        st.pyplot(fig)
 
     with chart_tabs[1]:
-        st.subheader("Boxplot for BMI and Blood Pressure")
-        plot_option = st.selectbox("Select the variable to view", ["BMI", "BloodPressure"])
+        st.subheader("Boxplot을 선택하세요")
         
-        if plot_option == "BMI":
-            fig = px.box(diabetes_df, x="Outcome", y="BMI", title="BMI Distribution by Outcome")
-            st.plotly_chart(fig)
+        # selectbox로 박스 플롯 선택
+        boxplot_choice = st.selectbox("Select Boxplot", ["BMI Distribution", "Blood Pressure Distribution"])
         
-        if plot_option == "BloodPressure":
-            fig = px.box(diabetes_df, x="Outcome", y="BloodPressure", title="Blood Pressure Distribution by Outcome")
-            st.plotly_chart(fig)
+        fig, ax = plt.subplots(figsize=(8, 5))
+        
+        if boxplot_choice == "BMI Distribution":
+            sns.boxplot(data=diabetes_df, x="Outcome", y="BMI", palette="Set2", ax=ax)
+            ax.set_title("BMI Distribution")
+        
+        elif boxplot_choice == "Blood Pressure Distribution":
+            sns.boxplot(data=diabetes_df, x="Outcome", y="BloodPressure", palette="Set2", ax=ax)
+            ax.set_title("Blood Pressure Distribution")
+        
+        st.pyplot(fig)
 
     with chart_tabs[2]:
         st.subheader("상관관계 히트맵")
-        corr_matrix = diabetes_df.corr()
-        fig = px.imshow(corr_matrix, title="Correlation Heatmap", color_continuous_scale="RdBu")
-        st.plotly_chart(fig)
+        fig, ax = plt.subplots(figsize=(8,6))
+        sns.heatmap(diabetes_df.corr(), annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5, ax=ax)
+        ax.set_title("Feature Correlation Heatmap")
+        st.pyplot(fig)
 
 def model_performance():
     st.title("모델 성능 평가")
@@ -131,8 +146,8 @@ def model_performance():
 if menu == "Home":
     home()
 elif menu == "데이터분석":
-    eda()
+    data_analysis()
 elif menu == "데이터시각화":
-    eda()
+    data_visualization()
 elif menu == "머신러닝보고서":
     model_performance()
