@@ -69,7 +69,7 @@ def home():
     """)
 
     # 관련 이미지 추가 (이미지는 URL 또는 로컬 파일 경로로 제공)
-    st.image("diabetes.jpg", width=500)
+    st.image("data/diabetes.jpg", width=500)
 
     # 데이터 설명
     st.markdown("""
