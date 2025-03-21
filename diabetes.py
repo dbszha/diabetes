@@ -67,15 +67,9 @@ def home():
 
     이 대시보드는 당뇨병 예측을 위한 데이터 분석 및 모델링을 다루고 있습니다. 주요 데이터로는 BMI, 포도당 수치, 혈압 등의 정보를 바탕으로, 개인의 당뇨 여부를 예측하는 모델을 학습시켜 정확도를 평가하고, 다양한 시각적 분석을 제공합니다. 이 대시보드를 통해 당뇨병 관련 데이터를 시각적으로 분석하고, 예측 모델의 성능을 확인할 수 있습니다.
     """)
-    import os
 
-    image_path = "data/diabetes.jpg"
-    if os.path.exists(image_path):
-        st.image(image_path, width=500)
-    else:
-     st.warning("이미지를 불러올 수 없습니다. 파일 경로를 확인해주세요.")
     # 관련 이미지 추가 (이미지는 URL 또는 로컬 파일 경로로 제공)
-    # st.image("data/diabetes.jpg", width=500)
+    # st.image("./data/diabetes.jpg", width=500)
 
     # 데이터 설명
     st.markdown("""
