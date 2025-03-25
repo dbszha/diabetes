@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, recall_score
 
 # 데이터 불러오기
 diabetes_df = pd.read_csv("data/diabetes.csv")
@@ -38,9 +38,22 @@ X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, 
 model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
+# 예측 결과
 y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-report_dict = classification_report(y_test, y_pred, output_dict=True)
+
+# 기본 recall 계산 (기존)
+recall = recall_score(y_test, y_pred)
+
+# 확률을 통해 threshold 조정 (예: 0.3로 설정)
+y_pred_prob = model.predict_proba(X_test)[:, 1]  # 1번 클래스의 확률
+threshold = 0.3
+y_pred_adjusted = (y_pred_prob > threshold).astype(int)
+
+# 조정된 recall 계산
+new_recall = recall_score(y_test, y_pred_adjusted)
+
+# 새로운 classification report 계산
+report_dict = classification_report(y_test, y_pred_adjusted, output_dict=True)
 classification_df = pd.DataFrame(report_dict).transpose()
 
 # Streamlit UI
@@ -52,7 +65,6 @@ menu = st.sidebar.selectbox("Go to", ["Home", "데이터분석", "데이터시�
 def home():
     st.title("당뇨병 및 건강 지표 분석")
     
-    # 간단한 질병 설명 추가
     st.markdown("""
     ### 당뇨병(디아베티스)란?
     당뇨병은 혈당 수치가 지속적으로 높은 상태인 만성 질환입니다. 
@@ -62,33 +74,37 @@ def home():
     - **1형 당뇨병**: 주로 어린이나 청소년에게 발생하며, 췌장이 인슐린을 생산하지 못합니다.
     - **2형 당뇨병**: 성인에게 더 흔하며, 인슐린 저항이 발생하고, 혈당 조절이 어렵습니다.
     - **임신성 당뇨병**: 임신 중에 발생하며, 출산 후 대부분은 사라지지만, 이후 당뇨병 발병 위험이 높아질 수 있습니다.
-    
+
     당뇨병은 증상이 초기에는 미미할 수 있으므로, 정기적인 혈당 검사를 통해 조기에 발견하고 관리하는 것이 중요합니다.
-
-    이 대시보드는 당뇨병 예측을 위한 데이터 분석 및 모델링을 다루고 있습니다. 주요 데이터로는 BMI, 포도당 수치, 혈압 등의 정보를 바탕으로, 개인의 당뇨 여부를 예측하는 모델을 학습시켜 정확도를 평가하고, 다양한 시각적 분석을 제공합니다. 이 대시보드를 통해 당뇨병 관련 데이터를 시각적으로 분석하고, 예측 모델의 성능을 확인할 수 있습니다.
-    """)
-
-    # 관련 이미지 추가 (이미지는 URL 또는 로컬 파일 경로로 제공)
-    # st.image("./data/diabetes.jpg", width=500)
-
-    # 데이터 설명
-    st.markdown("""
-    **데이터 설명**
-    - **Pregnancies**: 임신 횟수
-    - **Glucose**: 포도당 수치
-    - **BloodPressure**: 혈압
-    - **SkinThickness**: 피부 두께
-    - **Insulin**: 인슐린 수치
-    - **BMI**: 체질량지수
-    - **DiabetesPedigreeFunction**: 당뇨 유전 지수
-    - **Age**: 나이
-    - **Outcome**: 당뇨 여부 (0: 정상, 1: 당뇨)
+     이 대시보드는 당뇨병 예측을 위한 데이터 분석 및 모델링을 다루고 있습니다. 주요 데이터로는 BMI, 포도당 수치, 혈압 등의 정보를 바탕으로, 개인의 당뇨 여부를 예측하는 모델을 학습시켜 정확도를 평가하고, 다양한 시각적 분석을 제공합니다. 이 대시보드를 통해 당뇨병 관련 데이터를 시각적으로 분석하고, 예측 모델의 성능을 확인할 수 있습니다.
     """)
 
 def data_analysis():
     st.title("데이터 분석")
     st.write("여기서는 데이터 분석을 위한 기본적인 통계값을 확인할 수 있습니다.")
-    st.write(diabetes_df.describe())  # 데이터의 기본 통계값 출력
+
+    # 탭 메뉴 추가
+    chart_tabs = st.tabs(["데이터 통계값", "원본 데이터"])
+
+    with chart_tabs[0]:
+        st.subheader("데이터 통계값")
+        st.markdown("""
+        **데이터 설명**
+        - **Pregnancies**: 임신 횟수
+        - **Glucose**: 포도당 수치
+        - **BloodPressure**: 혈압
+        - **SkinThickness**: 피부 두께
+        - **Insulin**: 인슐린 수치
+        - **BMI**: 체질량지수
+        - **DiabetesPedigreeFunction**: 당뇨 유전 지수
+        - **Age**: 나이
+        - **Outcome**: 당뇨 여부 (0: 정상, 1: 당뇨)
+        """)
+        st.write(diabetes_df.describe())  # 데이터의 기본 통계값 출력
+
+    with chart_tabs[1]:
+        st.subheader("원본 데이터")
+        st.write(diabetes_df.head(10))  # 처음 10줄만 출력
 
 def data_visualization():
     st.title("데이터 시각화")
@@ -99,7 +115,7 @@ def data_visualization():
 
     with chart_tabs[0]:
         st.subheader("연령, 포도당, 혈압, BMI 분포")
-        fig, axes = plt.subplots(2,2,figsize=(12,8))
+        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
         columns = ["Age", "Glucose", "BloodPressure", "BMI"]
         
         # bins 간격 조정 (이 부분에서 간격을 넓혀줌)
@@ -131,15 +147,19 @@ def data_visualization():
 
     with chart_tabs[2]:
         st.subheader("상관관계 히트맵")
-        fig, ax = plt.subplots(figsize=(8,6))
+        fig, ax = plt.subplots(figsize=(8, 6))
         sns.heatmap(diabetes_df.corr(), annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5, ax=ax)
         ax.set_title("Feature Correlation Heatmap")
         st.pyplot(fig)
 
 def model_performance():
     st.title("모델 성능 평가")
-    st.write(f'### 모델 정확도: {accuracy:.2f}')
-    st.subheader("Classification Report")
+    
+    # 정확도 및 recall 표시
+    st.write(f'### 모델 정확도: {accuracy_score(y_test, y_pred_adjusted):.2f}')
+    # st.write(f'### 새로운 Recall 값 (1일 경우): {new_recall:.2f}')
+    
+    # st.subheader("Classification Report (조정된 Threshold 기준)")
     st.dataframe(classification_df)
 
 # 선택한 메뉴에 따라 화면에 다른 내용을 표시
